@@ -9,19 +9,19 @@ public class GRASP {
 	/**全局变量*/
 	ArrayList<Integer> Q_Sum;//前k次选择结果的总和
 	ArrayList<Integer> Set;
-	int[][] profit;
+	double[][] profit;
 	int[] weight;
 	int scale;
 	int constraint;
 	Random rand;
 	
 	//构造函数
-	public GRASP(int scale, int constraint, int[][] profit, int[] weight){
+	public GRASP(int scale, int constraint, double[][] profit, int[] weight){
 		this.scale = scale;
 		this.constraint = constraint;
 		rand = new Random();
 		Q_Sum = new ArrayList<Integer>();
-		this.profit = new int[scale][scale];
+		this.profit = new double[scale][scale];
 		for(int i = 0; i < scale; i++){
 			Q_Sum.add(0);
 			for(int j = 0; j< scale; j++){
@@ -127,14 +127,14 @@ public class GRASP {
 	
 	
 	public void LocalSearch(){
-		for(int i = 0; i < Set.size(); i++)
-			System.out.print(Set.get(i)+" ");
-		System.out.println();
+		//for(int i = 0; i < Set.size(); i++)
+		//	System.out.print(Set.get(i)+" ");
+		//System.out.println();
 		boolean Terminate = false;
 		ArrayList<Integer> R_S = new ArrayList<Integer>(CaculateRS(Set));
 		while(!Terminate){
-			int Addition = 0;
-			int HighestAddition = 0;
+			double Addition = 0;
+			double HighestAddition = 0;
 			int AddIndex = 0;
 			int ReplaceIndexS = 0;
 			int ReplaceIndexRS = 0;
@@ -154,7 +154,6 @@ public class GRASP {
 			}
 			//判断替换一个元素
 			for(int i = 0; i < Set.size(); i++){
-				//System.out.println(Set.size());
 				int index = Set.get(i);
 				ArrayList<Integer> SetTest = new ArrayList<Integer>(Set);
 				SetTest.remove(i);
@@ -164,23 +163,21 @@ public class GRASP {
 				for(int k = 0; k < SetTemp.size(); k++){
 					Addition = Addition - profit[index][SetTemp.get(k)];
 				}
+				double Additiontemp = Addition;
 				for(int k = 0; k < RSTemp.size(); k++){
-					int Additiontemp = Addition;
+					Addition = Additiontemp;
 					for(int j = 0; j < SetTemp.size(); j++){
 						Addition = Addition + profit[SetTemp.get(j)][RSTemp.get(k)];
 					}
 					Addition = Addition + profit[RSTemp.get(k)][RSTemp.get(k)];
-					if(Addition > HighestAddition){
+					if(Addition - HighestAddition > 0.00001){ 
 						HighestAddition = Addition;
 						ReplaceIndexS = index;
 						ReplaceIndexRS = RSTemp.get(k);
 					}
-					else{
-						Addition = Additiontemp;
-					}
 				}
 			}
-			if(HighestAddition > 0){
+			if(HighestAddition > 0.00001){
 				if(ReplaceIndexS == 0 && ReplaceIndexRS == 0){
 					Set.add(AddIndex);
 				}
@@ -195,8 +192,8 @@ public class GRASP {
 		}
 	}
 	
-	public int CaculateLB(){
-		int lb = 0;
+	public double CaculateLB(){
+		double lb = 0;
 		for(int i = 0; i< Set.size(); i++){
 			for(int j = 0; j < Set.size(); j++){
 				if(Set.get(i) >= Set.get(j)){
@@ -216,16 +213,20 @@ public class GRASP {
 	}
 	
 	
-	public int GRASP(int gamma, int beta, int lambda, int sigma){
-		int MinLen = gamma, MaxLen = gamma+beta, BestLB = 0, LB = 0, count = 0, m = 0;
+	public double ProcessGRASP(int gamma,int beta,int lambda,int sigma){
+		int MinLen = gamma, MaxLen = gamma+beta, count = 0, m = 0;
+		double BestLB = 0, LB = 0;
 		ArrayList<Integer> TempSet = new ArrayList<Integer>();
+		ArrayList<Integer> TempQ_Sum = new ArrayList<Integer>();
 		while(count != lambda){
 			int k = 0;
 			for(k = m*sigma+1; k <= (m+1)*sigma; k++){
+				if(k == m*sigma+1){
+					TempQ_Sum.clear();
+					for(int i = 0; i < Q_Sum.size(); i++)
+						TempQ_Sum.add(Q_Sum.get(i));
+				}
 				Construction(MinLen, MaxLen, TempSet, k);
-				/*for(int i = 0; i < Set.size(); i++)
-					System.out.print(Set.get(i)+" ");
-				System.out.println();*/
 				LocalSearch();
 				BestLB = CaculateLB();
 				UpdateQSum();
@@ -241,7 +242,7 @@ public class GRASP {
 			}
 			TempSet.clear();
 			for(int j = 0; j < scale; j++){
-				if(Q_Sum.get(j) == (m+1)*sigma){
+				if(TempQ_Sum.get(j) == m*sigma && m > 0){
 					TempSet.add(j);
 				}
 			}
@@ -256,14 +257,38 @@ public class GRASP {
 	}
 	//主函数
 	public static void main(String []args){
-		int[] weight = {1,1,2};
-		int[][] profit = {{1,6,4},{6,0,2},{4,2,12}};
-		GRASP test = new GRASP(3, 2, profit, weight);
+		int scale = 400;
+		int[] weight = new int[scale];
+		double[][] profit = new double[scale][scale];
+		int constrations = 30;
+		for(int i = 0; i< scale; i++){
+			weight[i] = 1;
+		}
+		for(int i = 0; i < scale; i++){
+			for(int j = 0; j < scale; j++){
+				if(j < i){
+					profit[i][j] = profit[j][i];
+				}
+				else{
+					profit[i][j] = Math.random();
+				}
+			}
+		}
+		/*for(int i = 0; i < scale; i++){
+			for(int j = 0; j < scale; j++){
+				System.out.print(profit[i][j]+"   ");
+			}
+			System.out.println();
+		}*/
+		long startTime=System.currentTimeMillis();   //获取开始时间  
+		GRASP test = new GRASP(scale, constrations, profit, weight);
 		/*ArrayList<Integer>set = new ArrayList<Integer>();
 		set.add(0);
 		set.add(1);
 		test.LocalSearch(set);*/
-		int BestLB = test.GRASP(1, 1, 5, 1);
+		double BestLB = test.ProcessGRASP(1, 3, 3, 1);
+		long endTime=System.currentTimeMillis(); //获取结束时间  
+		System.out.println("程序运行时间： "+(endTime-startTime)+"ms"); 
 		System.out.println(BestLB);
 	}
 }
