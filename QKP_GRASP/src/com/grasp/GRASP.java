@@ -1,5 +1,9 @@
 package com.grasp;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Random;
@@ -9,11 +13,14 @@ public class GRASP {
 	/**全局变量*/
 	ArrayList<Integer> Q_Sum;//前k次选择结果的总和
 	ArrayList<Integer> Set;
+	ArrayList<Integer> SetPrecise;
+	ArrayList<Integer> r;
 	double[][] profit;
 	int[] weight;
 	int scale;
 	int constraint;
 	Random rand;
+	double BestLBPrecise;
 	
 	//构造函数
 	public GRASP(int scale, int constraint, double[][] profit, int[] weight){
@@ -28,7 +35,14 @@ public class GRASP {
 				this.profit[i][j] = profit[i][j];
 			}
 		}
+		SetPrecise = new ArrayList<Integer>();
+		r = new ArrayList<Integer>();
+		for(int i = 0; i< scale; i++){
+			SetPrecise.add(i);
+			r.add(0);
+		}
 		this.weight = new int[scale];
+		BestLBPrecise = 0;
 		System.arraycopy(weight, 0, this.weight, 0, scale);
 	}
 	
@@ -176,6 +190,7 @@ public class GRASP {
 						ReplaceIndexRS = RSTemp.get(k);
 					}
 				}
+				System.out.println(HighestAddition);
 			}
 			if(HighestAddition > 0.00001){
 				if(ReplaceIndexS == 0 && ReplaceIndexRS == 0){
@@ -248,47 +263,120 @@ public class GRASP {
 			}
 			m = m + 1;
 		}
-		System.out.println("---------------------------------------------------------------");
+		/*System.out.println("---------------------------------------------------------------");
 		for(int i = 0; i < Set.size(); i++)
 			System.out.print(Set.get(i)+" ");
 		System.out.println();
-		System.out.println(BestLB);
+		System.out.println(BestLB);*/
 		return BestLB;
 	}
+	
+	public void combination(int n, int m, int k, int index){ 
+		if(index == m){ //输出组合结果 
+			/*for(int i = 0; i < m; ++i) 
+				System.out.print(r.get(i)); 
+			System.out.println();*/
+			double total = 0;
+			for(int i = 0; i < m; ++i){
+				for (int j = 0; j < m; ++j){
+					if(r.get(i) >= r.get(j)){
+						total += profit[r.get(i)][r.get(j)];
+					}
+				}
+			}
+			if (total > BestLBPrecise)
+				BestLBPrecise = total;
+			return; 
+		} 
+		for(int i = k; i < n; ++i){ 
+			r.set(index, SetPrecise.get(i)); 
+			combination(n, m, i + 1, index + 1);//注意第三个参数是i + 1 
+		} 
+	} 
+	
+	
 	//主函数
 	public static void main(String []args){
-		int scale = 400;
+		int scale = 100;
+		int constrations = 0;
 		int[] weight = new int[scale];
 		double[][] profit = new double[scale][scale];
-		int constrations = 30;
-		for(int i = 0; i< scale; i++){
-			weight[i] = 1;
-		}
-		for(int i = 0; i < scale; i++){
+		File file = new File("C:\\Users\\xdy\\Desktop\\instance\\jeu_100_25_1.txt");
+        BufferedReader reader = null;
+        try {
+            reader = new BufferedReader(new FileReader(file));
+            String tempString = null;
+            int line = 1;
+            // 一次读入一行，直到读入null为文件结束
+            while ((tempString = reader.readLine()) != null) {
+                // 显示行号
+            	//System.out.println(line);
+                if(line == 3 ){
+                	tempString = tempString.replaceAll("   ", "	");
+                	tempString = tempString.replaceAll("  ", "	");
+                	tempString = tempString.replaceAll(" ", "	");
+                	String[] str = tempString.split("	");
+                	for(int i = 0; i < str.length; i++){
+                		profit[i][i] = Double.parseDouble(str[i]);
+                	}
+                }
+                else if(line >=4 && line <= 100){
+                	tempString = tempString.replaceAll("   ", "	");
+                	tempString = tempString.replaceAll("  ", "	");
+                	tempString = tempString.replaceAll(" ", "	");
+                	String[] str = tempString.split("	");
+                	for(int i = 0; i < str.length; i++){
+                		profit[line-4][i+line-3] = Double.parseDouble(str[i]);
+                	}
+                }
+                else if (line == 105){
+                	constrations = Integer.parseInt(tempString);
+                }
+                else if(line == 106){
+                	tempString = tempString.replaceAll("   ", "	");
+                	tempString = tempString.replaceAll("  ", "	");
+                	tempString = tempString.replaceAll(" ", "	");
+                	String[] str = tempString.split("	");
+                	for(int i = 0; i < str.length; i++){
+                		weight[i] = Integer.parseInt(str[i]);
+                	}
+                }
+                line++;
+            }
+            reader.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (IOException e1) {
+                }
+            }
+        }
+        for (int i = 0; i < scale; i++){
+        	for (int j = 0; j < scale; j++){
+        		if(j <= i)
+        			profit[i][j] = profit[j][i];
+        	}
+        }
+		for(int i = 0 ; i < scale; i++){
 			for(int j = 0; j < scale; j++){
-				if(j < i){
-					profit[i][j] = profit[j][i];
-				}
-				else{
-					profit[i][j] = Math.random();
+				if(j >= i){
+					if(profit[i][j] != profit[j][i]){
+						System.out.println("dsfdf");
+					}
 				}
 			}
 		}
-		/*for(int i = 0; i < scale; i++){
-			for(int j = 0; j < scale; j++){
-				System.out.print(profit[i][j]+"   ");
-			}
-			System.out.println();
-		}*/
-		long startTime=System.currentTimeMillis();   //获取开始时间  
 		GRASP test = new GRASP(scale, constrations, profit, weight);
-		/*ArrayList<Integer>set = new ArrayList<Integer>();
-		set.add(0);
-		set.add(1);
-		test.LocalSearch(set);*/
-		double BestLB = test.ProcessGRASP(1, 3, 3, 1);
+		//test.combination(scale, constrations, 0, 0);
+		//System.out.println(test.BestLBPrecise);
+		long startTime=System.currentTimeMillis();   //获取开始时间  
+		double BestLB = test.ProcessGRASP(1, 3, 1, 5);
 		long endTime=System.currentTimeMillis(); //获取结束时间  
 		System.out.println("程序运行时间： "+(endTime-startTime)+"ms"); 
 		System.out.println(BestLB);
+		//System.out.println((test.BestLBPrecise-BestLB)/test.BestLBPrecise);
 	}
 }
