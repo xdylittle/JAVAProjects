@@ -32,18 +32,18 @@ public class DecisionTree extends Classifier {
 	*/
 	@Override
     public void train(boolean[] isCategory, double[][] features, double[] labels) {
-		handleMissData(features);
+		handleMissData(features,labels);
         isClassification = isCategory[isCategory.length - 1];
         if (isClassification) { // classification
         	ArrayList<Integer> CandAttr = new ArrayList<Integer>();
         	for(int i = 0; i< features[0].length; i++)
         		CandAttr.add(i);
-        	root = buildTree(features,CandAttr,labels,0,isCategory);
+        	root = buildTree(features,CandAttr,labels,0,isCategory,1);
         } else { // regression
         	ArrayList<Integer> CandAttr = new ArrayList<Integer>();
         	for(int i = 0; i< features[0].length; i++)
         		CandAttr.add(i);
-        	root = buildTreeR(features,CandAttr,labels,0,isCategory);
+        	root = buildTreeR(features,CandAttr,labels,0,isCategory,1);
         }
     }
 
@@ -112,18 +112,19 @@ public class DecisionTree extends Classifier {
         }
     }
     
-    public TreeNode buildTree(double[][] D, ArrayList<Integer> attribute_list, double[] labels, double attr_value, boolean[] isCategory){
+    public TreeNode buildTree(double[][] D, ArrayList<Integer> attribute_list, double[] labels, double attr_value, boolean[] isCategory, int depth){
     	TreeNode node = new TreeNode();
     	/*for(int i = 0; i < labels.length; i++){
     		System.out.print(labels[i]);
     	}
     	System.out.println();*/
     	node.setValue(attr_value);
+    	node.setDepth(depth);
     	if(Issameclass(labels)){
     		node.setName(labels[0]);
     		return node;
     	}
-    	if(attribute_list.size() == 0){
+    	if(attribute_list.size() == 0 || depth == 15){
     		node.setName(mode(labels));
     		return node;
     	}
@@ -167,7 +168,7 @@ public class DecisionTree extends Classifier {
     					index++;
     				}
     			}
-    			node.child.add(buildTree(Dj,attributej,labelsj,value,isCategory));
+    			node.child.add(buildTree(Dj,attributej,labelsj,value,isCategory,depth+1));
     		}
     	}
     	else{
@@ -200,12 +201,12 @@ public class DecisionTree extends Classifier {
 					index2++;
 				}
 			}
-			node.child.add(buildTree(Dj1,attributej,labelsj1,bestValue,isCategory));
-			node.child.add(buildTree(Dj2,attributej,labelsj2,bestValue,isCategory));
+			node.child.add(buildTree(Dj1,attributej,labelsj1,bestValue,isCategory,depth+1));
+			node.child.add(buildTree(Dj2,attributej,labelsj2,bestValue,isCategory,depth+1));
     	}
     	return node;
     }
-    public TreeNode buildTreeR(double[][] D, ArrayList<Integer> attribute_list, double[] labels, double attr_value, boolean[] isCategory){
+    public TreeNode buildTreeR(double[][] D, ArrayList<Integer> attribute_list, double[] labels, double attr_value, boolean[] isCategory,int depth){
     	TreeNode node = new TreeNode();
     	/*for(int i = 0; i < labels.length; i++){
     		System.out.print(labels[i]);
@@ -216,7 +217,7 @@ public class DecisionTree extends Classifier {
     		node.setName(labels[0]);
     		return node;
     	}
-    	if(attribute_list.size() == 0){
+    	if(attribute_list.size() == 0 ){
     		node.setName(avg(labels));
     		return node;
     	}
@@ -260,7 +261,7 @@ public class DecisionTree extends Classifier {
     					index++;
     				}
     			}
-    			node.child.add(buildTreeR(Dj,attributej,labelsj,value,isCategory));
+    			node.child.add(buildTreeR(Dj,attributej,labelsj,value,isCategory,depth+1));
     		}
     	}
     	else{
@@ -293,8 +294,8 @@ public class DecisionTree extends Classifier {
 					index2++;
 				}
 			}
-			node.child.add(buildTreeR(Dj1,attributej,labelsj1,bestValue,isCategory));
-			node.child.add(buildTreeR(Dj2,attributej,labelsj2,bestValue,isCategory));
+			node.child.add(buildTreeR(Dj1,attributej,labelsj1,bestValue,isCategory,depth+1));
+			node.child.add(buildTreeR(Dj2,attributej,labelsj2,bestValue,isCategory,depth+1));
     	}
     	return node;
     }
@@ -334,12 +335,31 @@ public class DecisionTree extends Classifier {
         }
         return most;
     }
-    public void handleMissData(double[][] features){
+    public double modeD(ArrayList<Double> labels){
+    	Object[] temp = labels.toArray();
+    	Arrays.sort(temp);
+        int count = 1;
+        int longest = 0;
+        double most = 0;
+        for (int i = 0; i < temp.length - 1; i++) {
+            if ((double)temp[i] == (double)temp[i + 1]) {
+                count++;
+            } else {
+                count = 1;// 如果不等于，就换到了下一个数，那么计算下一个数的次数时，count的值应该重新符值为一
+                continue;
+            }
+            if (count > longest) {
+                most = (double)temp[i];
+                longest = count;
+            }
+        }
+        return most;
+    }
+    /*public void handleMissData(double[][] features, double[] labels){
+    	System.out.println(Double.isNaN(Double.parseDouble("NaN")));
        	if(features == null){
        		return;
        	}
-       	
-       	/*calculate each feature's average value and assign it to the miss one*/
        	List<ArrayList> missIndex = new ArrayList<ArrayList>();
        	for(int i=0; i<features[0].length; i++){
        		missIndex.add(new ArrayList());
@@ -362,6 +382,32 @@ public class DecisionTree extends Classifier {
    	    		}
        		}
        	}
+    }*/
+    public void handleMissData(double[][] features, double[] labels){
+    	if(features == null){
+       		return;
+       	}
+    	ArrayList<Double> de = new ArrayList<Double>();
+    	for(int i = 0; i < features.length; i++){
+    		for(int j = 0; j < features[0].length; j++){
+    			if(Double.isNaN(features[i][j])){
+    				de = FindD(features,labels,labels[i],j);
+    				features[i][j] = modeD(de);
+    				//System.out.println(modeD(de));
+    			}
+    		}
+    	}
+    }
+    public ArrayList<Double> FindD(double[][] features, double[] labels, double label, int attr){
+    	ArrayList<Double> temp = new ArrayList<Double>();
+    	for(int i = 0; i < features.length; i++){
+    		if(labels[i] == label){
+    			if(!Double.isNaN(features[i][attr])){
+    				temp.add(features[i][attr]);
+    			}
+    		}
+    	}
+    	return temp;
     }
     public static void main(String[] args){
     	DataSet ds = new DataSet("./data/housing.data");
@@ -384,6 +430,7 @@ class TreeNode{
     private double value;
     ArrayList<TreeNode> child; //子结点集合  
     private int nodetype;
+    private int depth;
     public TreeNode() {  
         this.name = 0;  
         //this.rule = new ArrayList<String>();  
@@ -413,6 +460,12 @@ class TreeNode{
     }
     public void setType(int type){
     	this.nodetype = type;
+    }
+    public int getDepth(){
+    	return this.depth;
+    }
+    public void setDepth(int depth){
+    	this.depth = depth;
     }
 }
 
