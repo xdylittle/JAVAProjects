@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -71,13 +72,17 @@ public class NaiveBayes extends Classifier {
     			if(p.getIsNum() == true){
     				HashMap<Double,HashMap<Double,Integer>> info_pro = p.getInfoPro();
     				if(info_pro.containsKey(feature)){
-    					p_p = info_pro.get(feature).get(label)/labelmap.get(label);
+    					if(info_pro.get(feature).containsKey(label)){
+    						p_p = (double)info_pro.get(feature).get(label)/(double)labelmap.get(label);
+    					}
+    					else{
+    						p_p = 1/(double)(labelmap.get(label)+labelmap.get(label));
+    					}
     				}
     				else{
-    					p_p = 1/(labelmap.get(label)+info_pro.keySet().size()+1);
+    					//System.out.println(info_pro.get(feature).get(label));
+    					p_p = 1/(double)(labelmap.get(label)+info_pro.keySet().size()+1);
     				}
-    				if(p.getUse() == false)
-    					p_p = 1;
     			}
     			else{
     				double avg = p.getAvg().get(label);
@@ -107,7 +112,9 @@ public class NaiveBayes extends Classifier {
     			max = current;
     			c = key;
     		}
+    		//System.out.println(key+" "+current);
     	}
+    	//System.out.println(c);
     	return c;
     }
     public Property findP(int index){
@@ -119,6 +126,34 @@ public class NaiveBayes extends Classifier {
     }
     
     public void handleMissData(double[][] features, double[] labels){
+       	if(features == null){
+       		return;
+       	}
+       	List<ArrayList> missIndex = new ArrayList<ArrayList>();
+       	for(int i=0; i<features[0].length; i++){
+       		missIndex.add(new ArrayList());
+       	}
+       	double[] sumToAvg = new double[features[0].length];
+       	for(int i=0; i<features.length; i++){
+       		for(int j=0; j<features[0].length; j++){
+       			if(features[i][j] >=0 || features[i][j]<=0)
+       				sumToAvg[j] += features[i][j];
+       			else{
+       				missIndex.get(j).add(i);
+       			}
+       		}
+       	}
+       	for(int i=0; i<features[0].length; i++){
+       		if(missIndex.get(i).size() > 0){
+       			sumToAvg[i] = Math.round((sumToAvg[i]/(features.length-missIndex.get(i).size())));
+   	    		for(int j=0; j<missIndex.get(i).size(); j++){
+   	    			features[(int)missIndex.get(i).get(j)][i] = sumToAvg[i];
+   	    		}
+       		}
+       	}
+    }
+    
+    /*public void handleMissData(double[][] features, double[] labels){
     	if(features == null){
        		return;
        	}
@@ -163,17 +198,17 @@ public class NaiveBayes extends Classifier {
             }
         }
         return most;
-    }
+    }*/
     
     public static void main(String[] args){
-    	DataSet ds = new DataSet("D:\\eclipsespace\\NaiveBayes\\data\\segment.data");
+    	DataSet ds = new DataSet("D:\\eclipsespace\\NaiveBayes\\data\\breast-cancer.data");
     	//NaiveBayes nb = new NaiveBayes();
     	Evaluation eva = new Evaluation(ds, "NaiveBayes");
         eva.crossValidation();
         System.out.println("mean and standard deviation of accuracy:" + eva.getAccMean() + "," + eva.getAccStd());
         //System.out.println("mean and standard deviation of RMSE:" + eva.getRmseMean() + "," + eva.getRmseStd());
     	/*nb.train(ds.getIsCategory(), ds.getFeatures(), ds.getLabels());
-    	for(int i = 0; i< ds.getFeatures().length; i++){
+    	for(int i = 0; i< 1; i++){
     		double label = nb.predict(ds.getFeatures()[i]);
     		//System.out.println(label);
     	}*/
@@ -217,28 +252,40 @@ class Property{
 	}
 	public void setInfo_pro(ArrayList<Double> feature, double[] labels){
 		info_pro = new HashMap<Double,HashMap<Double,Integer>>();
+		HashSet<Double> featuretemp = new HashSet<Double>();
 		for(int i = 0; i< feature.size(); i++){
-			info_pro.put(feature.get(i), new HashMap<Double,Integer>());
+			featuretemp.add(feature.get(i));
+		}
+		Iterator<Double> it = featuretemp.iterator();
+		while(it.hasNext()){
+			info_pro.put(it.next(), new HashMap<Double,Integer>());
 		}
 		for(int i = 0; i< feature.size(); i++){
 			HashMap<Double, Integer> temp = info_pro.get(feature.get(i));
-			for(int j = 0; j< labels.length; j ++){
-				if(temp.containsKey(labels[j])){
-					int count = temp.get(labels[j]);
-					temp.put(labels[j], count+1);
-					info_pro.put(feature.get(i), temp);
-				}
-				else{
-					temp.put(labels[j], 1);
-					info_pro.put(feature.get(i), temp);
-				}
+			if(temp.containsKey(labels[i])){
+				int count = temp.get(labels[i]);
+				temp.put(labels[i], count+1);
+				info_pro.put(feature.get(i), temp);
+			}
+			else{
+				//System.out.println(labels[i]);
+				temp.put(labels[i], 1);
+				info_pro.put(feature.get(i), temp);
 			}
 		}
-		if(info_pro.size() == 1){
-			this.useful = false;
+		Set<Double> key_feature = info_pro.keySet();
+		it = key_feature.iterator();
+		/*while(it.hasNext()){
+			double key1 = it.next();
+			HashMap temp = info_pro.get(key1);
+			Set<Double> key_label = temp.keySet();
+			Iterator<Double> it1 = key_label.iterator();
+			while(it1.hasNext()){
+				double key2 = it1.next();
+				System.out.println(key1+" "+key2+" "+temp.get(key2));
+			}
 		}
-		else
-			this.useful = true;
+		System.out.println();*/
 	}
 	
 	public void setAS(ArrayList<Double> feature, double[] labels){
