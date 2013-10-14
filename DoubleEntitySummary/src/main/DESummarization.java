@@ -1,5 +1,7 @@
 package main;
 
+import grasp.GRASP;
+
 import java.util.ArrayList;
 
 import virtuoso.VirtuosoSql;
@@ -12,7 +14,7 @@ public class DESummarization {
 		ArrayList<FeatureNode> feature1 = VirtuosoSql.findFeature(entity1);
 		ArrayList<FeatureNode> feature2 = VirtuosoSql.findFeature(entity2);
 		double[][] profit = new double[feature1.size()+feature2.size()][feature1.size()+feature2.size()];
-		double[] weight = new double[feature1.size()+feature2.size()];
+		int[] weight = new int[feature1.size()+feature2.size()];
 		
 		//初始化profit和weight
 		for(int i = 0; i< feature1.size(); i++){
@@ -33,9 +35,23 @@ public class DESummarization {
 		}
 		
 		//根据GRASP选择使profit最大的满足限制的feature
+		GRASP grasps = new GRASP(weight.length, 6, profit, weight);
+		ArrayList<Integer> Index = grasps.ProcessGRASP(1, 3, 1, 1);
+		for(int i = 0; i < Index.size(); i++){
+			if(Index.get(i)-feature1.size() < 0){
+				int index = Index.get(i);
+				feature1.get(index).setDis(true);
+			}
+			else{
+				int index = Index.get(i)-feature1.size();
+				feature2.get(index).setDis(true);
+			}
+		}
 		
-		
+		//设定阀值，生成新的二位profit数组，为下面的怎么呈现摘要做准备
+		double threshold = 0;
 		//呈现摘要
+		
 		
 	}
 	public static void main(String[] args){
