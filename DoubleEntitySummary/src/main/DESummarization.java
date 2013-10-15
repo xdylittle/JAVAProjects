@@ -59,7 +59,7 @@ public class DESummarization {
 		int k = 0;
 		for(int i = 0; i < feature1.size(); i++){
 			if(feature1.get(i).getDis() == true){
-				FeatureNode node1 = new FeatureNode(feature1.get(i).getPro(), feature1.get(i).getVal(), 1, true, k);
+				FeatureNode node1 = new FeatureNode(feature1.get(i).getPro(), feature1.get(i).getVal(), 1, false, k);
 				k++;
 				feature1_display.add(node1);
 				ArrayList<Double> row = new ArrayList<Double>();
@@ -72,7 +72,7 @@ public class DESummarization {
 						else
 							row.add(0.0);
 						if(i == 0){
-							FeatureNode node2 = new FeatureNode(feature2.get(j).getPro(), feature2.get(j).getVal(), 2, true, p);
+							FeatureNode node2 = new FeatureNode(feature2.get(j).getPro(), feature2.get(j).getVal(), 2, false, p);
 							p++;
 							feature2_display.add(node2);
 						}
@@ -92,13 +92,17 @@ public class DESummarization {
 					int number = findNode(setlist,i,j);
 					if(number == -1){
 						nodeset.addNode(20+j);
+						feature2_display.get(j).setDis(true);
 						nodeset.addNode(10+i);
+						feature1_display.get(i).setDis(true);
 						nodeset.addProfit(temp.get(j));
 						nodeset.addLength(1);
 					}
 					else{
 						setlist.get(number).addNode(20+j);
+						feature2_display.get(j).setDis(true);
 						setlist.get(number).addNode(10+i);
+						feature1_display.get(i).setDis(true);
 						setlist.get(number).addProfit(temp.get(j));
 						setlist.get(number).addLength(1);
 					}
@@ -108,10 +112,57 @@ public class DESummarization {
 				setlist.add(nodeset);
 			}
 		}
-		
+		sort(setlist);
+		for(int i = 0; i < setlist.size(); i++){
+			NodeSet nodeset = setlist.get(i);
+			HashSet<Integer> node = nodeset.getNode();
+			Iterator<Integer> it = node.iterator();
+			while(it.hasNext()){
+				int temp = it.next();
+				if(temp/10 == 1){
+					String pro = feature1_display.get(temp%10).getPro();
+					String val = feature1_display.get(temp%10).getVal();
+					System.out.println(feature1_display.get(temp%10).getENum()+" "+pro+" "+val);
+				}
+				else{
+					String pro = feature2_display.get(temp%10).getPro();
+					String val = feature2_display.get(temp%10).getVal();
+					System.out.println(feature2_display.get(temp%10).getENum()+" "+pro+" "+val);
+				}
+			}
+			
+		}
+		System.out.println("-------------------------------------------------------------------");
+		for(int i = 0; i< feature1_display.size(); i++){
+			if(feature1_display.get(i).getDis() == false){
+				String pro = feature1_display.get(i).getPro();
+				String val = feature1_display.get(i).getVal();
+				System.out.println(feature1_display.get(i).getENum()+" "+pro+" "+val);
+			}
+		}
+		for(int i = 0; i < feature2_display.size(); i++){
+			if(feature2_display.get(i).getDis() == false){
+				String pro = feature2_display.get(i).getPro();
+				String val = feature2_display.get(i).getVal();
+				System.out.println(feature2_display.get(i).getENum()+" "+pro+" "+val);
+			}
+		}
 		
 	}
 	
+	public void sort(ArrayList<NodeSet> setlist){
+		for(int i=0;i<setlist.size()-1;i++){
+			for(int j=i+1;j<setlist.size();j++){
+				double profiti = setlist.get(i).getProfit()/setlist.get(i).getLength();
+				double profitj = setlist.get(j).getProfit()/setlist.get(j).getLength();
+				if (profiti > profitj){
+					NodeSet temp=setlist.get(i);
+					setlist.set(i, setlist.get(j));
+					setlist.set(j, temp);
+			 	}
+			}
+		}
+	}
 	public int findNode(ArrayList<NodeSet> setlist,int e_num, int index){
 		int number = -1;
 		if(setlist.size() == 0)
