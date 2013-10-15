@@ -20,6 +20,7 @@ public class NaiveBayes extends Classifier {
 	HashMap<Double,Double> score;
 	HashMap<Double,Integer> labelmap;
 	ArrayList<Property> all_pro;
+	double total;
 
     public NaiveBayes() {
     	labelmap = new HashMap<Double,Integer>();
@@ -41,6 +42,7 @@ public class NaiveBayes extends Classifier {
     			score.put(labels[i], 0.0);
     		}
     	}
+    	total = features.length;
     	for(int i = 0; i < features[0].length; i++){
     		ArrayList<Double> featuretemp = new ArrayList<Double>();
     		for(int j = 0; j < features.length; j++){
@@ -63,7 +65,7 @@ public class NaiveBayes extends Classifier {
     	Iterator<Double> it = key.iterator();
     	while(it.hasNext()){
     		double label = it.next();
-    		double scoree = 1;
+    		double scoree = (double)labelmap.get(label)/total;
     		for(int i = 0; i< features.length; i++){
     			double p_p = 0;
     			int index = i;
@@ -76,7 +78,7 @@ public class NaiveBayes extends Classifier {
     						p_p = (double)info_pro.get(feature).get(label)/(double)labelmap.get(label);
     					}
     					else{
-    						p_p = 1/(double)(labelmap.get(label)+labelmap.get(label));
+    						p_p = 1/(double)(labelmap.get(label)+info_pro.keySet().size()+1);
     					}
     				}
     				else{

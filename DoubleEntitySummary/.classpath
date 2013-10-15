@@ -2,8 +2,8 @@
 <classpath>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7"/>
-	<classpathentry kind="lib" path="D:/eclipsespace/DoubleEntitySummary/lib/log4j-1.2.17.jar"/>
 	<classpathentry kind="lib" path="D:/eclipsespace/DoubleEntitySummary/lib/edu.mit.jwi_2.2.6_jdk.jar"/>
+	<classpathentry kind="lib" path="D:/eclipsespace/DoubleEntitySummary/lib/log4j-1.2.17.jar"/>
 	<classpathentry kind="lib" path="D:/eclipsespace/DoubleEntitySummary/lib/lucene-core-3.6.1.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

@@ -7,11 +7,12 @@ public class FeatureNode {
 	int index;
 	boolean display;//在最后的摘要中是否要呈现
 	
-	public FeatureNode(String property, String value, int e_num, boolean display){
+	public FeatureNode(String property, String value, int e_num, boolean display, int index){
 		this.property = property;
 		this.value = value;
 		this.e_num = e_num;
 		this.display = display;
+		this.index = index;
 	}
 	
 	public String getPro(){
