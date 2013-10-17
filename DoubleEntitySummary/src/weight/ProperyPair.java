@@ -13,8 +13,8 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.util.Version;
 
+import virtuoso.VirtuosoSql;
 import weight.Tokenizer;
-
 import edu.mit.jwi.Dictionary;
 import edu.mit.jwi.IDictionary;
 import edu.mit.jwi.item.IIndexWord;
@@ -104,9 +104,15 @@ public class ProperyPair {
 		return similarity;
 	}
 	
-	public double DistinctionDegree(String property1, String property2){
-		
-		return 1;
+	public double DistinctionDegree(String property1, String graphiri1, String property2, String graphiri2){
+		double featurenum1 = VirtuosoSql.findFeatureNumber(property1, graphiri1);
+		double featurenum2 = VirtuosoSql.findFeatureNumber(property2, graphiri2);
+		double o1 = VirtuosoSql.findoNumber(property1, graphiri1);
+		double o2 = VirtuosoSql.findoNumber(property2, graphiri2);
+		double aac1 = featurenum1/o1;
+		double aac2 = featurenum2/o2;
+		double temp = 2*aac1*aac2/(aac1+aac2);
+		return temp;
 	}
 	
 	public double max(double x1, double x2, double x3, double x4){

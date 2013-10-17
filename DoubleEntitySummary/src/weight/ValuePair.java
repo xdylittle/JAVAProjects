@@ -30,28 +30,91 @@ public class ValuePair {
 		synp1 = new ArrayList<String>();
 		synp2 = new ArrayList<String>();
 	}
-	public double Similarity(String property1, String property2){
+	public double Similarity(String property1, String property2,int casenum){
+		
 		//直接计算两个属性的相似度
-		double similarity = ISub.getSimilarity(property1, property2);
+		double similarity0 = 0, similarity1 = -1, similarity2 = 0, similarity3 = 0,similarity = 0;
 		
-		//经过wordnet变换之后计算两个属性的相似度
-		String[] p1 = testStandard(hump(property1)).split(" ");
-		String[] p2 = testStandard(hump(property2)).split(" ");
-		getCombination(1,"",p1,1);//计算经过wordnet变换后的每个property的各种不同组合
-		getCombination(2,"",p2,2);
-		for(int i = 0; i< synp1.size(); i++){
-			for(int j = 0; j< synp2.size(); j++){
-				double sim = ISub.getSimilarity(synp1.get(i), synp2.get(j));
-				if(sim > similarity)
-					similarity = sim;
-			}
+		if(casenum == 0 || casenum == 4){
+			similarity0 = ISub.getSimilarity(property1, property2);
+			similarity = Math.abs(similarity0);
 		}
-		
+		//经过wordnet变换之后计算两个属性的相似度
+		else if(casenum == 1 || casenum == 4){
+			String[] p1 = testStandard(hump(property1)).split(" ");
+			String[] p2 = testStandard(hump(property2)).split(" ");
+			synp1.clear();
+			synp2.clear();
+			getCombination(1,"",p1,1);//计算经过wordnet变换后的每个property的各种不同组合
+			getCombination(1,"",p2,2);
+			for(int i = 0; i< synp1.size(); i++){
+				for(int j = 0; j< synp2.size(); j++){
+					double sim = ISub.getSimilarity(synp1.get(i), synp2.get(j));
+					if(sim > similarity1)
+						similarity1 = sim;
+				}
+			}
+			similarity = Math.abs(similarity1);
+		}
 		//经过stem变换之后计算两个属性的相似度
-		
+		else if(casenum == 2 || casenum == 4){
+			String[] p1 = testStandard(hump(property1)).split(" ");
+			String pp1 = "";
+			String[] p2 = testStandard(hump(property2)).split(" ");
+			String pp2 = "";
+			for(int i = 0; i< p1.length; i++){
+				pp1 = pp1 + Tokenizer.tokenize(p1[i]);
+			}
+			for(int i = 0; i< p2.length; i++){
+				pp2 = pp2 + Tokenizer.tokenize(p2[i]);
+			}
+			similarity2 = ISub.getSimilarity(pp1, pp2);
+			similarity = Math.abs(similarity2);
+		}
+		else if(casenum == 3 || casenum == 4){
+			String[] p1 = testStandard(hump(property1)).split(" ");
+			String[] p2 = testStandard(hump(property2)).split(" ");
+			for(int i = 0; i< p1.length; i++){
+				p1[i] = Tokenizer.tokenize(p1[i]);
+			}
+			for(int i = 0; i< p2.length; i++){
+				p2[i] = Tokenizer.tokenize(p2[i]);
+			}
+			synp1.clear();
+			synp2.clear();
+			getCombination(1,"",p1,1);//计算经过wordnet变换后的每个property的各种不同组合
+			getCombination(1,"",p2,2);
+			for(int i = 0; i< synp1.size(); i++){
+				for(int j = 0; j< synp2.size(); j++){
+					double sim = ISub.getSimilarity(synp1.get(i), synp2.get(j));
+					if(sim > similarity3)
+						similarity3 = sim;
+				}
+				//System.out.println(synp1.get(i)+" "+);
+			}
+			similarity = Math.abs(similarity3);
+		}
+		else if(casenum == 4){
+			similarity = max(Math.abs(similarity0),Math.abs(similarity1),Math.abs(similarity2),Math.abs(similarity3));
+		}
 		return similarity;
 	}
 	
+	public double max(double x1, double x2, double x3, double x4){
+		double p1, p2;
+		if(x1 > x2)
+			p1 = x1;
+		else
+			p1 = x2;
+		if(x3 > x4)
+			p2 = x3;
+		else
+			p2 = x4;
+		if(p1 > p2)
+			return p1;
+		else
+			return p2;
+	}
 	public void getCombination(int length,String str, String[] p1,int index){
 		if(length == p1.length){
 			ArrayList<String> synptemp = new ArrayList<String>();
@@ -63,9 +126,9 @@ public class ValuePair {
 			}
 			for(int i = 0; i< synptemp.size(); i++){
 				if(index == 1)
-					synp1.add(str+" "+synptemp.get(i));
+					synp1.add(str+synptemp.get(i));
 				else
-					synp2.add(str+" "+synptemp.get(i));
+					synp2.add(str+synptemp.get(i));
 			}
 		}
 		else{
@@ -77,7 +140,7 @@ public class ValuePair {
 				e.printStackTrace();
 			}
 			for(int i = 0; i< synptemp.size(); i++){
-				getCombination(length+1,str+" "+synptemp.get(i),p1,index);
+				getCombination(length+1,str+synptemp.get(i)+" ",p1,index);
 			}
 		}
 	}
@@ -188,7 +251,6 @@ public class ValuePair {
 		} 
 		 return temp;
 	 }
-	
 	public static void main(String[] args){
 		ProperyPair propertypair = new ProperyPair();
 		String[] p1 = propertypair.testStandard(propertypair.hump("AppleOfPear")).split(" ");

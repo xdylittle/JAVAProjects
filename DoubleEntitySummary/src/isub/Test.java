@@ -17,8 +17,8 @@ import java.util.regex.Pattern;
 
 public class Test{
 	public static void main(String []args){
-		double x = ISub.getSimilarity("apple", "appletree");
-		System.out.println(x);
+		double x = ISub.getSimilarity("The River", "71441^^http://www.w3.org/2001/XMLSchema#int");
+		System.out.println(Math.abs(x));
 		
 	}
 	/*int start = 0;

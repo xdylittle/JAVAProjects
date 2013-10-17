@@ -12,10 +12,10 @@ import weight.*;
 
 public class DESummarization {
 	
-	public void CompareSummary(String entity1, String entity2){
+	public void CompareSummary(String entity1, String graphiri1, String entity2, String graphiri2){
 		//得到实体对应的所有feature
-		ArrayList<FeatureNode> feature1 = VirtuosoSql.findFeature(entity1);
-		ArrayList<FeatureNode> feature2 = VirtuosoSql.findFeature(entity2);
+		ArrayList<FeatureNode> feature1 = VirtuosoSql.findFeature(entity1,graphiri1,1);
+		ArrayList<FeatureNode> feature2 = VirtuosoSql.findFeature(entity2,graphiri2,2);
 		double[][] profit = new double[feature1.size()+feature2.size()][feature1.size()+feature2.size()];
 		int[] weight = new int[feature1.size()+feature2.size()];
 		
@@ -24,21 +24,58 @@ public class DESummarization {
 			for(int j = 0; j< feature2.size(); j++){
 				ProperyPair propair = new ProperyPair();
 				double ppairc = propair.ComparableDegree(feature1.get(i).getPro(), feature2.get(j).getPro() ,0);
-				double ppaird = propair.DistinctionDegree(feature1.get(i).getPro(), feature2.get(j).getPro());
+				double ppaird = propair.DistinctionDegree(feature1.get(i).getPro(),graphiri1, feature2.get(j).getPro(), graphiri2);
 				
 				ValuePair valpair = new ValuePair();
-				double vpair = valpair.Similarity(feature1.get(i).getVal(), feature2.get(i).getVal());
+				double vpair = valpair.Similarity(feature1.get(i).getVal(), feature2.get(j).getVal(),0);
 				
 				double effectiveness = ppairc*ppaird*vpair;
+				
+				if(Double.isNaN(effectiveness) == true){
+					effectiveness = 0;
+				}
+				if(i == 0 && j == 8){
+					System.out.println(feature2.get(j).getVal()+" "+feature1.get(i).getVal()+" "+vpair);
+				}
 				profit[i][j+feature1.size()] = effectiveness;
+				profit[j+feature1.size()][i] = effectiveness;
 			}
+		}
+		for(int i = 0; i < feature1.size(); i++){
+			for(int j = 0; j< feature1.size(); j++){
+				if(i == j){
+					FeatureSelf featureself = new FeatureSelf();
+					profit[i][j] = featureself.SelfInformation(feature1.get(i).getPro(), feature1.get(i).getVal());
+				}
+				else{
+					profit[i][j] = 0;
+				}
+			}
+		}
+		for(int i = 0; i < feature2.size(); i++){
+			for(int j = 0; j< feature2.size(); j++){
+				if(i == j){
+					FeatureSelf featureself = new FeatureSelf();
+					profit[i+feature1.size()][j+feature1.size()] = featureself.SelfInformation(feature2.get(i).getPro(), feature2.get(i).getVal());
+				}
+				else{
+					profit[i+feature1.size()][j+feature1.size()] = 0;
+				}
+			}
+		}
+		for(int i = 0; i< profit.length; i++){
+			for(int j = 0; j< profit[0].length; j++){
+				System.out.print(profit[i][j]+" ");
+			}
+			System.out.println();
 		}
 		for(int i = 0; i < weight.length; i++){
 			weight[i] = 1;
 		}
 		
 		//根据GRASP选择使profit最大的满足限制的feature
-		GRASP grasps = new GRASP(weight.length, 6, profit, weight);
+		int constration = 6;
+		GRASP grasps = new GRASP(weight.length, constration, profit, weight);
 		ArrayList<Integer> Index = grasps.ProcessGRASP(1, 3, 1, 1);
 		for(int i = 0; i < Index.size(); i++){
 			if(Index.get(i)-feature1.size() < 0){
@@ -49,6 +86,10 @@ public class DESummarization {
 				int index = Index.get(i)-feature1.size();
 				feature2.get(index).setDis(true);
 			}
+		}
+		
+		for(int i = 0; i< Index.size(); i++){
+			System.out.println(Index.get(i));
 		}
 		
 		//设定阀值，生成新的二位profit数组，为下面的怎么呈现摘要做准备
@@ -66,12 +107,12 @@ public class DESummarization {
 				int p = 0;
 				for(int j = 0; j < feature2.size(); j++){
 					if(feature2.get(j).getDis() == true){
-						if(profit[feature1.get(i).getIndex()][feature2.get(j).getIndex()] > threshold){
-							row.add(profit[feature1.get(i).getIndex()][feature2.get(j).getIndex()]);
+						if(profit[feature1.get(i).getIndex()][feature2.get(j).getIndex()+feature1.size()] > threshold){
+							row.add(profit[feature1.get(i).getIndex()][feature2.get(j).getIndex()+feature1.size()]);
 						}
 						else
 							row.add(0.0);
-						if(i == 0){
+						if(k == 1){
 							FeatureNode node2 = new FeatureNode(feature2.get(j).getPro(), feature2.get(j).getVal(), 2, false, p);
 							p++;
 							feature2_display.add(node2);
@@ -81,6 +122,21 @@ public class DESummarization {
 				display_profit.add(row);
 			}
 		}
+		for(int i = 0; i< feature1_display.size(); i++){
+			System.out.println(feature1_display.get(i).getPro()+" ");
+		}
+		System.out.println("*************************************");
+		for(int i = 0; i< feature2_display.size(); i++){
+			System.out.println(feature2_display.get(i).getPro()+" ");
+		}
+		System.out.println("*************************************");
+		for(int i = 0; i< display_profit.size(); i++){
+			ArrayList<Double>temp = display_profit.get(i);
+			for(int j = 0; j< temp.size(); j++){
+				System.out.print(temp.get(j)+" ");
+			}
+			System.out.println();
+		}
 		
 		//呈现摘要
 		ArrayList<NodeSet> setlist = new ArrayList<NodeSet>();
@@ -89,7 +145,7 @@ public class DESummarization {
 			NodeSet nodeset = new NodeSet();
 			for(int j = 0; j< temp.size(); j++){
 				if(temp.get(j)> 0){
-					int number = findNode(setlist,i,j);
+					int number = findNode(setlist,2,j);
 					if(number == -1){
 						nodeset.addNode(20+j);
 						feature2_display.get(j).setDis(true);
@@ -122,12 +178,12 @@ public class DESummarization {
 				if(temp/10 == 1){
 					String pro = feature1_display.get(temp%10).getPro();
 					String val = feature1_display.get(temp%10).getVal();
-					System.out.println(feature1_display.get(temp%10).getENum()+" "+pro+" "+val);
+					System.out.println(feature1_display.get(temp%10).getENum()+" "+pro+"    "+val);
 				}
 				else{
 					String pro = feature2_display.get(temp%10).getPro();
 					String val = feature2_display.get(temp%10).getVal();
-					System.out.println(feature2_display.get(temp%10).getENum()+" "+pro+" "+val);
+					System.out.println(feature2_display.get(temp%10).getENum()+" "+pro+"    "+val);
 				}
 			}
 			
@@ -181,6 +237,7 @@ public class DESummarization {
 		return number;
 	}
 	public static void main(String[] args){
-		
+		DESummarization test = new DESummarization();
+		test.CompareSummary("http://data.linkedmdb.org/resource/performance/71441", "http://linkedmdb.org", "http://data.linkedmdb.org/resource/performance/71442","http://linkedmdb.org");
 	}
 }
