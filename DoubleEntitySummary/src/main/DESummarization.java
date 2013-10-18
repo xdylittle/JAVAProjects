@@ -7,15 +7,18 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.TreeMap;
 
+import virtuoso.DBConnectionFactory;
 import virtuoso.VirtuosoSql;
+import virtuoso.jena.driver.VirtGraph;
 import weight.*;
 
 public class DESummarization {
 	
 	public void CompareSummary(String entity1, String graphiri1, String entity2, String graphiri2){
 		//得到实体对应的所有feature
-		ArrayList<FeatureNode> feature1 = VirtuosoSql.findFeature(entity1,graphiri1,1);
-		ArrayList<FeatureNode> feature2 = VirtuosoSql.findFeature(entity2,graphiri2,2);
+		VirtGraph virgraph= DBConnectionFactory.getGeoVirtuosoConnection();
+		ArrayList<FeatureNode> feature1 = VirtuosoSql.findFeature(entity1,graphiri1,1,virgraph);
+		ArrayList<FeatureNode> feature2 = VirtuosoSql.findFeature(entity2,graphiri2,2,virgraph);
 		double[][] profit = new double[feature1.size()+feature2.size()][feature1.size()+feature2.size()];
 		int[] weight = new int[feature1.size()+feature2.size()];
 		
@@ -24,7 +27,7 @@ public class DESummarization {
 			for(int j = 0; j< feature2.size(); j++){
 				ProperyPair propair = new ProperyPair();
 				double ppairc = propair.ComparableDegree(feature1.get(i).getPro(), feature2.get(j).getPro() ,0);
-				double ppaird = propair.DistinctionDegree(feature1.get(i).getPro(),graphiri1, feature2.get(j).getPro(), graphiri2);
+				double ppaird = propair.DistinctionDegree(feature1.get(i).getPro(),graphiri1, feature2.get(j).getPro(), graphiri2,virgraph);
 				
 				ValuePair valpair = new ValuePair();
 				double vpair = valpair.Similarity(feature1.get(i).getVal(), feature2.get(j).getVal(),0);
