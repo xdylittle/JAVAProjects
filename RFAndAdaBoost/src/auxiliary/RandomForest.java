@@ -1,70 +1,70 @@
-/*
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
 package auxiliary;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.HashMap;  
 import java.util.Random;
-import java.util.Set;
+import java.util.concurrent.ExecutionException;  
+import java.math.BigDecimal;  
+
+import static java.lang.Math.*;  
 
 /**
  *
  * @author daq
  */
 public class RandomForest extends Classifier {
-	
-	//boolean isClassification;
+
+    boolean isClassification;
     ArrayList<TreeNode> rootlist;
 
     public RandomForest() {
+    	isClassification = true;
     	rootlist = new ArrayList<TreeNode>();
     }
 
-    @Override
+	/*
+	* isCategory[k] indicates whether the kth attribut is discrete or continuous, the last attribute is the label
+	* features[i] is the feature vector of the ith sample
+	* labels[i] is the label of he ith sample
+	*/
+	@Override
     public void train(boolean[] isCategory, double[][] features, double[] labels) {
-    	handleMissData(features,labels);
-    	Random random = new Random();
-    	for(int number = 0; number < 1; number++){
-    		ArrayList<ArrayList<Double>> featurestemp = new ArrayList<ArrayList<Double>>();
+		handleMissData(features,labels);
+		Random random = new Random();
+        for(int number = 0; number < 10; number++){
+        	ArrayList<ArrayList<Double>> featurestemp = new ArrayList<ArrayList<Double>>();
     		ArrayList<Double> labelstemp = new ArrayList<Double>();
-    		int featurenumber = 0;
-    		HashMap<Integer,Integer> CandAttr = new HashMap<Integer,Integer>();
-    		while(featurenumber < 5){
-    			int index = Math.abs(random.nextInt())%features[0].length;
-    			System.out.println(index);
-    			if(!CandAttr.containsKey(index)){
-    				CandAttr.put(index,number);
-    				featurenumber ++;
-    			}
-    		}
-    		for(int i = 0; i < features.length; i++){
-    			int index = Math.abs(random.nextInt())%features.length;
-    			//System.out.println(index);
-    			ArrayList<Double> featuretemp = new ArrayList<Double>();
-    			Set<Integer> keyset = CandAttr.keySet();
-    			Iterator<Integer> it = keyset.iterator();
-    			while(it.hasNext()){
-    				int key = it.next();
-    				featuretemp.add(features[index][key]);
-    			}
-    			labelstemp.add(labels[index]);
-    			featurestemp.add(featuretemp);
-    		}
-    		TreeNode root = buildTree(featurestemp,CandAttr,labelstemp,0,isCategory,1);
-    		rootlist.add(root);
-    	}
+        	ArrayList<Integer> CandAttr = new ArrayList<Integer>();
+        	for(int i = 0; i< features[0].length; i++)
+        		CandAttr.add(i);
+        	for(int i = 0; i< features.length; i++){
+        		int index = Math.abs(random.nextInt())%features.length;
+        		//int index = i;
+        		ArrayList<Double> featuretemp = new ArrayList<Double>();
+        		for(int j = 0; j< features[0].length; j++){
+        			featuretemp.add(features[index][j]);
+        		}
+        		featurestemp.add(featuretemp);
+        		labelstemp.add(labels[index]);
+        	}
+        	rootlist.add(buildTree(featurestemp,CandAttr,labelstemp,0,isCategory,1));
+        }
     }
 
+	/*
+	* features is the feature vector of the test sample
+	* you need to return the label of test sample
+	*/
     @Override
     public double predict(double[] features) {
-    	ArrayList<Double> labelsname = new ArrayList<Double>();
-    	for(int number = 0; number< rootlist.size(); number++){
-    		TreeNode node = rootlist.get(number);
+    	ArrayList<Double> labels = new ArrayList<Double>();
+    	for(int number = 0; number < rootlist.size(); number++){
+            TreeNode node = rootlist.get(number);
             while(node.child.size() > 0){
             	if(node.getType() == 1){
             		double value = node.child.get(0).getValue();
@@ -90,17 +90,19 @@ public class RandomForest extends Classifier {
             		node = node.child.get(index);
             	}
             }
-            labelsname.add(node.getName());
+            labels.add(node.getName()); 
     	}
-    	return mode(labelsname);
+    	return mode(labels);
     }
-    public TreeNode buildTree(ArrayList<ArrayList<Double>> D, HashMap<Integer,Integer> attribute_list, ArrayList<Double> labels, double attr_value, boolean[] isCategory, int depth){
+    
+    public TreeNode buildTree(ArrayList<ArrayList<Double>> D, ArrayList<Integer> attribute_list, ArrayList<Double> labels, double attr_value, boolean[] isCategory, int depth){
     	TreeNode node = new TreeNode();
     	/*for(int i = 0; i < labels.length; i++){
     		System.out.print(labels[i]);
     	}
     	System.out.println();*/
     	node.setValue(attr_value);
+    	node.setDepth(depth);
     	if(Issameclass(labels)){
     		node.setName(labels.get(0));
     		return node;
@@ -109,11 +111,7 @@ public class RandomForest extends Classifier {
     		node.setName(mode(labels));
     		return node;
     	}
-    	ArrayList<Integer> attribute_listtemp = new ArrayList<Integer>();
-    	for(int i = 0; i< attribute_list.size(); i++){
-    		attribute_listtemp.add(i);
-    	}
-    	Gain gain = new Gain(D,labels,attribute_listtemp,isCategory);
+    	Gain gain = new Gain(D,labels,attribute_list,isCategory);
     	int splitting_attribute = gain.bestAttr();
     	if(splitting_attribute == -1){
     		node.setName(mode(labels));
@@ -124,19 +122,12 @@ public class RandomForest extends Classifier {
     	}
     	System.out.print(D.length+" "+labels.length+" ");
     	System.out.println(splitting_attribute);*/
-    	int splitting = 0;
-    	HashMap<Integer,Integer> attributej = new HashMap<Integer,Integer>();
-    	Set<Integer> keyset = attribute_list.keySet();
-    	Iterator<Integer> iti = keyset.iterator();
-    	while(iti.hasNext()){
-    		int key = iti.next();
-    		if(attribute_list.get(key) == splitting_attribute)
-    			splitting = key;
-    		else{
-    			attributej.put(key, attribute_list.get(key));
-    		}
+    	node.setName(splitting_attribute);
+    	ArrayList<Integer> attributej = new ArrayList<Integer>();
+    	for(int i = 0; i< attribute_list.size(); i++){
+    		if(attribute_list.get(i) != splitting_attribute)
+    			attributej.add(attribute_list.get(i));
     	}
-    	node.setName(splitting);
     	if(isCategory[splitting_attribute] == true){
     		node.setType(0);
     		HashSet<Double> values = gain.getValues(splitting_attribute);
@@ -188,18 +179,6 @@ public class RandomForest extends Classifier {
     	}
     	return node;
     }
-   
-    boolean findIndex(ArrayList<Integer> CandAttr, int index){
-    	boolean find = false;
-    	for(int i = 0; i< CandAttr.size(); i++){
-    		if(CandAttr.get(i) == index){
-    			find = true;
-    			break;
-    		}
-    	}
-    	return find;
-    }
-    
     public double avg(double[] labels){
     	double sum = 0;
     	for(int i = 0; i< labels.length; i++){
@@ -218,12 +197,12 @@ public class RandomForest extends Classifier {
     	return true;
     }
     public double mode(ArrayList<Double> labels){
+    	double most = labels.get(0);
     	sort(labels);
         int count = 1;
         int longest = 0;
-        double most = 0;
         for (int i = 0; i < labels.size() - 1; i++) {
-            if (labels.get(i) == labels.get(i+1)) {
+            if (labels.get(i) - labels.get(i+1) == 0) {
                 count++;
             } else {
                 count = 1;// 如果不等于，就换到了下一个数，那么计算下一个数的次数时，count的值应该重新符值为一
@@ -324,19 +303,15 @@ public class RandomForest extends Classifier {
     public static void main(String[] args){
     	DataSet ds = new DataSet("./data/breast-cancer.data");
     	RandomForest dt = new RandomForest();
-    	//Evaluation eva = new Evaluation(ds, "RandomForest");
-        //eva.crossValidation();
-        //System.out.println("mean and standard deviation of accuracy:" + eva.getAccMean() + "," + eva.getAccStd());
-       // System.out.println("mean and standard deviation of RMSE:" + eva.getRmseMean() + "," + eva.getRmseStd());
-    	dt.train(ds.getIsCategory(), ds.getFeatures(), ds.getLabels());
-    	double label = dt.predict(ds.getFeatures()[0]);
-    	System.out.println(label);
-    	
-    	double[] test = {1.0, 1.0, 0.0, 1.0, 0.0};
-    	ArrayList<Double> testtemp = new ArrayList<Double>();
-    	for(int i = 0; i< test.length; i++)
-    		testtemp.add(test[i]);
-    	System.out.println(dt.mode(testtemp));
+    	Evaluation eva = new Evaluation(ds, "RandomForest");
+        eva.crossValidation();
+        System.out.println("mean and standard deviation of accuracy:" + eva.getAccMean() + "," + eva.getAccStd());
+        //System.out.println("mean and standard deviation of RMSE:" + eva.getRmseMean() + "," + eva.getRmseStd());
+    	//dt.train(ds.getIsCategory(), ds.getFeatures(), ds.getLabels());
+    	//for(int i = 0; i< ds.getFeatures().length; i++){
+    		//double label = dt.predict(ds.getFeatures()[i]);
+    		//System.out.println(label);
+    	//}
     }
     
 }
@@ -346,6 +321,7 @@ class TreeNode{
     private double value;
     ArrayList<TreeNode> child; //子结点集合  
     private int nodetype;
+    private int depth;
     public TreeNode() {  
         this.name = 0;  
         //this.rule = new ArrayList<String>();  
@@ -375,6 +351,12 @@ class TreeNode{
     }
     public void setType(int type){
     	this.nodetype = type;
+    }
+    public int getDepth(){
+    	return this.depth;
+    }
+    public void setDepth(int depth){
+    	this.depth = depth;
     }
 }
 
@@ -419,38 +401,7 @@ class Gain{
 			return -1;
 		return index;
 	}
-	/*public int bestAttrR(){
-		int index = 0;
-		double best = 0;
-		double best_value = 0.0;
-		double current = 0.0;
-		for(int i = 0; i < attr_list.size(); i++){
-			current = gainInfoR(D, labels, attr_list.get(i), isCategory);
-			if(i == 0){
-				index = attr_list.get(0);
-				best = current;
-				best_value = this.splitting_value;
-			}
-			else{
-				if(current < best){
-					index = attr_list.get(i);
-					best = current;
-					best_value = this.splitting_value;
-				}
-			}
-		}
-		boolean re = true;
-		for(int i = 1; i < this.D.length; i++){
-			if(this.D[i][index] != this.D[0][index])
-				re = false;
-		}
-		this.splitting_value = best_value;
-		//if(best == 0)
-		//	return -1;
-		if(re == true)
-			return -1;
-		return index;
-	}*/
+	
 	public double gainInfo(ArrayList<ArrayList<Double>> D, ArrayList<Double> labels, int attr, boolean[] isCategory){
 		double gain = 0;
 		if(isCategory[attr] == true){
@@ -607,117 +558,7 @@ class Gain{
 		}*/
 		return gain;
 	}
-	public double gainInfoR(double[][] D, double[] labels, int attr, boolean[] isCategory){
-		double gain = 0;
-		if(isCategory[attr] == true){
-			int i = 0;
-			HashSet<Double> hash_feature = new HashSet<Double>();
-			for(i = 0; i< D.length; i++){
-				hash_feature.add(D[i][attr]);
-			}
-			Iterator<Double> it = hash_feature.iterator();
-			while(it.hasNext()){
-				double current_gain = 0;
-				ArrayList<Double> label = new ArrayList<Double>();
-				double sum = 0;
-				double average = 0;
-				double feature = it.next();
-				for(i = 0; i < labels.length ;i++){
-					if(feature == D[i][attr]){
-						label.add(labels[i]);
-						sum += labels[i];
-					}
-				} 
-				average = sum/label.size();
-				for(i = 0; i< label.size(); i++){
-					current_gain = current_gain + (label.get(i)-average)*(label.get(i)-average);
-				}
-				gain = gain + current_gain/label.size();
-			}
-			//System.out.println(gain);
-		}
-		else{
-			/*for(int i = 0; i< D.length; i++){
-				for(int j = 0; j < D[0].length; j++){
-					System.out.print(D[i][j]+" ");
-				}
-				System.out.println();
-			}
-			for(int i = 0; i < labels.length; i++)
-				System.out.print(labels[i]+" ");
-			System.out.println();
-			System.out.println(attr);*/
-			double best_value = 0;
-			double best_gain = 0;
-			double temp_gain = 0;
-			HashSet<Double> featuretemp = new HashSet<Double>();
-			for(int i = 0; i< D.length; i++)
-				featuretemp.add(D[i][attr]);
-			Object[] feature = featuretemp.toArray();
-			Arrays.sort(feature);
-			if(feature.length == 1){
-				double sum1 = 0;
-				double average1 = 0;
-				for(int i = 0; i< labels.length; i++){
-					sum1 = sum1 + labels[i];
-				}
-				average1 = sum1/labels.length;
-				for(int i = 0; i< labels.length; i++){
-					temp_gain = temp_gain+(labels[i]-average1)*(labels[i]-average1);
-				}
-				temp_gain = temp_gain/labels.length;
-				gain = temp_gain;
-				//System.out.println(gain);
-				splitting_value = (double)feature[0];
-			}
-			else{
-				for(int i = 0; i < feature.length-1; i++){
-					double current_gain1 = 0;
-					double current_gain2 = 0;
-					double value = ((double)feature[i]+(double)feature[i+1])/2;
-					ArrayList<Double> label1 = new ArrayList<Double>();
-					ArrayList<Double> label2 = new ArrayList<Double>();
-					double sum1 = 0;
-					double average1 = 0;
-					double sum2 = 0;
-					double average2 = 0;
-					for(int j = 0; j < D.length ;j++){
-						if(D[j][attr] <= value){
-							sum1 += labels[j];
-							label1.add(labels[j]);
-						}
-						else{
-							sum2 += labels[j];
-							label2.add(labels[j]);
-						}
-					} 
-					average1 = sum1/label1.size();
-					average2 = sum2/label2.size();
-					for(int j = 0; j< label1.size(); j++){
-						current_gain1 = current_gain1 + (label1.get(j)-average1)*(label1.get(j)-average1);
-					}
-					for(int j = 0; j< label2.size(); j++){
-						current_gain2 = current_gain2 + (label2.get(j)-average2)*(label2.get(j)-average2);
-					}
-					temp_gain = current_gain1/label1.size()+current_gain2/label1.size();
-					if(i == 0){
-						best_gain = temp_gain;
-						best_value = value;
-					}
-					else{
-						if(temp_gain < best_gain){
-							best_gain = temp_gain;
-							best_value = value;
-						}
-					}
-				}
-				gain = best_gain;
-				//System.out.println(gain);
-				splitting_value = best_value;
-			}
-		}
-		return gain;
-	}
+	
 	public HashSet<Double> getValues(int attr){
 		HashSet<Double> hash_D = new HashSet<Double>();
 		for(int i = 0; i < D.size(); i++){
